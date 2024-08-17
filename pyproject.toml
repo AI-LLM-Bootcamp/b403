@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "b403"
+version = "0.1.0"
+description = ""
+authors = ["julio colomer <info@aiaccelera.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.11.4"
+jupyterlab = "^4.2.4"
+langchain = "^0.2.11"
+langchain-openai = "^0.1.17"
+python-dotenv = "^1.0.1"
+faiss-cpu = "^1.8.0.post1"
+langchain-community = "^0.2.10"
+docarray = "^0.40.0"
+tiktoken = "^0.7.0"
+langchain-chroma = "^0.1.2"
+langchainhub = "^0.1.20"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
