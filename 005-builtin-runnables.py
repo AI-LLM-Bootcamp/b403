@@ -1,11 +1,22 @@
 import os
 from dotenv import load_dotenv, find_dotenv
+# Remember: the .env file in the project folder must contain the line
+# OPENAI_API_KEY=sk-... (no quotes, no spaces).
 _ = load_dotenv(find_dotenv())
 openai_api_key = os.environ["OPENAI_API_KEY"]
 
 from langchain_openai import ChatOpenAI
 
-model = ChatOpenAI(model="gpt-3.5-turbo-0125")
+# Original version: this example used gpt-3.5-turbo-0125 (and, further down,
+# gpt-3.5-turbo), which were good choices when the course was recorded.
+# OpenAI has since retired them. Today we use a current chat model: small,
+# fast and affordable for practice. It is defined once here and reused below.
+MODEL = "gpt-6-luna"
+
+# This version of langchain-openai sends temperature=0.7 by default,
+# but recent OpenAI models only accept the default value (1).
+# That is why every model in this file sets temperature=1 explicitly.
+model = ChatOpenAI(model=MODEL, temperature=1)
 
 from langchain_core.runnables import RunnablePassthrough
 
@@ -119,8 +130,15 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
+# Original version: OpenAIEmbeddings() used its default model,
+# text-embedding-ada-002. That model still works, but OpenAI now presents
+# text-embedding-3-small as its current small embedding model: it performs
+# a bit better and costs less. Its vectors have the same length (1536).
+# Writing the model name makes it easy to see and change.
+EMBEDDING_MODEL = "text-embedding-3-small"
+
 vectorstore = FAISS.from_texts(
-    ["AI Accelera has trained more than 10,000 Alumni from all continents and top companies"], embedding=OpenAIEmbeddings()
+    ["AI Accelera has trained more than 10,000 Alumni from all continents and top companies"], embedding=OpenAIEmbeddings(model=EMBEDDING_MODEL)
 )
 
 retriever = vectorstore.as_retriever()
@@ -133,7 +151,9 @@ Question: {question}
 
 prompt = ChatPromptTemplate.from_template(template)
 
-model = ChatOpenAI(model="gpt-3.5-turbo")
+# Original version: gpt-3.5-turbo, now retired. We reuse the same current
+# model defined at the top (MODEL).
+model = ChatOpenAI(model=MODEL, temperature=1)
 
 retrieval_chain = (
     RunnableParallel({"context": retriever, "question": RunnablePassthrough()})
@@ -161,10 +181,12 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-model = ChatOpenAI(model="gpt-3.5-turbo")
+# Original version: gpt-3.5-turbo, now retired. We reuse MODEL and
+# EMBEDDING_MODEL, defined above.
+model = ChatOpenAI(model=MODEL, temperature=1)
 
 vectorstore = FAISS.from_texts(
-    ["AI Accelera has trained more than 5,000 Enterprise Alumni."], embedding=OpenAIEmbeddings()
+    ["AI Accelera has trained more than 5,000 Enterprise Alumni."], embedding=OpenAIEmbeddings(model=EMBEDDING_MODEL)
 )
 retriever = vectorstore.as_retriever()
 
@@ -265,7 +287,18 @@ class TopicClassifier(BaseModel):
 
 classifier_function = convert_to_openai_function(TopicClassifier)
 
-llm = ChatOpenAI().bind(functions=[classifier_function], function_call={"name": "TopicClassifier"}) 
+# Original version: ChatOpenAI() used the library's default model,
+# gpt-3.5-turbo, which OpenAI has since retired. We use MODEL instead.
+# This model calls a function (TopicClassifier). Recent OpenAI models only
+# accept functions and tools through this endpoint when reasoning is turned
+# off, so we set reasoning_effort to "none". This version of langchain-openai
+# does not have a reasoning_effort option yet, so we send it through
+# extra_body, which passes it straight to OpenAI.
+llm = ChatOpenAI(
+    model=MODEL,
+    temperature=1,
+    extra_body={"reasoning_effort": "none"}
+).bind(functions=[classifier_function], function_call={"name": "TopicClassifier"}) 
 
 parser = PydanticAttrOutputFunctionsParser(pydantic_schema=TopicClassifier, attr_name="topic")
 
@@ -280,7 +313,9 @@ from langchain.schema.runnable import RunnablePassthrough
 final_chain = (
     RunnablePassthrough.assign(topic=itemgetter("input") | classifier_chain) 
     | prompt_branch 
-    | ChatOpenAI()
+    # Original version: ChatOpenAI() with the library's default model,
+    # gpt-3.5-turbo, now retired. We use MODEL instead.
+    | ChatOpenAI(model=MODEL, temperature=1)
     | StrOutputParser()
 )
 

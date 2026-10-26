@@ -1,11 +1,22 @@
 import os
 from dotenv import load_dotenv, find_dotenv
+# Remember: the .env file in the project folder must contain the line
+# OPENAI_API_KEY=sk-... (no quotes, no spaces).
 _ = load_dotenv(find_dotenv())
 openai_api_key = os.environ["OPENAI_API_KEY"]
 
 from langchain_openai import ChatOpenAI
 
-model = ChatOpenAI(model="gpt-3.5-turbo")
+# Original version: this example used gpt-3.5-turbo, which was a good
+# choice when the course was recorded. OpenAI has since retired it.
+# Today we use a current chat model: small, fast and affordable for practice.
+# It is defined once here and reused in the rest of the file.
+MODEL = "gpt-6-luna"
+
+# This version of langchain-openai sends temperature=0.7 by default,
+# but recent OpenAI models only accept the default value (1).
+# That is why every model in this file sets temperature=1 explicitly.
+model = ChatOpenAI(model=MODEL, temperature=1)
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -34,9 +45,17 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import OpenAIEmbeddings
 
+# Original version: OpenAIEmbeddings() used its default model,
+# text-embedding-ada-002. That model still works, but OpenAI now presents
+# text-embedding-3-small as its current small embedding model: it performs
+# a bit better and costs less. Its vectors have the same length (1536).
+# Writing the model name makes it easy to see and change. It is reused in
+# the other vector stores of this file.
+EMBEDDING_MODEL = "text-embedding-3-small"
+
 vectorstore = DocArrayInMemorySearch.from_texts(
     ["AI Accelera has provided Generative AI Training and Consulting Services in more than 100 countries", "Aceleradora AI is the branch of AI Accelera for the Spanish-Speaking market"],
-    embedding=OpenAIEmbeddings(),
+    embedding=OpenAIEmbeddings(model=EMBEDDING_MODEL),
 )
 
 retriever = vectorstore.as_retriever()
@@ -77,7 +96,7 @@ from langchain_core.runnables import RunnablePassthrough, RunnableParallel
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 vectorstore = FAISS.from_texts(
-    ["AI Accelera has trained more than 10,000 Alumni from all continents and top companies"], embedding=OpenAIEmbeddings()
+    ["AI Accelera has trained more than 10,000 Alumni from all continents and top companies"], embedding=OpenAIEmbeddings(model=EMBEDDING_MODEL)
 )
 retriever = vectorstore.as_retriever()
 
@@ -88,7 +107,8 @@ Question: {question}
 """
 prompt = ChatPromptTemplate.from_template(template)
 
-model = ChatOpenAI(model="gpt-3.5-turbo")
+# Original version: gpt-3.5-turbo, now retired. We reuse MODEL.
+model = ChatOpenAI(model=MODEL, temperature=1)
 
 retrieval_chain = (
     RunnableParallel({"context": retriever, "question": RunnablePassthrough()})
@@ -116,10 +136,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-model = ChatOpenAI(model="gpt-3.5-turbo")
+# Original version: gpt-3.5-turbo, now retired. We reuse MODEL.
+model = ChatOpenAI(model=MODEL, temperature=1)
 
 vectorstore = FAISS.from_texts(
-    ["AI Accelera has trained more than 3,000 Enterprise Alumni."], embedding=OpenAIEmbeddings()
+    ["AI Accelera has trained more than 3,000 Enterprise Alumni."], embedding=OpenAIEmbeddings(model=EMBEDDING_MODEL)
 )
 retriever = vectorstore.as_retriever()
 
@@ -177,7 +198,8 @@ from langchain_core.prompts import ChatPromptTemplate
 
 prompt = ChatPromptTemplate.from_template("tell me a sentence about {politician}")
 
-model = ChatOpenAI(model="gpt-3.5-turbo")
+# Original version: gpt-3.5-turbo, now retired. We reuse MODEL.
+model = ChatOpenAI(model=MODEL, temperature=1)
 
 chain = prompt | model | StrOutputParser()
 
@@ -239,7 +261,9 @@ prompt2 = ChatPromptTemplate.from_template(
     "what continent is the country {country} in? respond in {language}"
 )
 
-model = ChatOpenAI()
+# Original version: ChatOpenAI() used the library's default model,
+# gpt-3.5-turbo, which OpenAI has since retired. We reuse MODEL.
+model = ChatOpenAI(model=MODEL, temperature=1)
 
 chain1 = prompt1 | model | StrOutputParser()
 
@@ -318,7 +342,7 @@ bad_chain = chat_prompt | chat_model | StrOutputParser()
 
 # Now lets create a chain with the normal OpenAI model
 from langchain_core.prompts import PromptTemplate
-from langchain_openai import OpenAI
+from langchain_openai import ChatOpenAI
 
 prompt_template = """Instructions: You're a funny assistant who always includes a joke in your response.
 
@@ -326,9 +350,16 @@ Question: Who is the best {sport} player worldwide?"""
 
 prompt = PromptTemplate.from_template(prompt_template)
 
-llm = OpenAI()
+# Original version: OpenAI() used the completions model
+# gpt-3.5-turbo-instruct, which OpenAI has since retired. Current OpenAI
+# models are chat models, so we use ChatOpenAI with MODEL. We keep the
+# name llm so the rest of the example works the same way.
+llm = ChatOpenAI(model=MODEL, temperature=1)
 
-good_chain = prompt | llm
+# A chat model returns a message, not plain text like the old completions
+# model did. We add StrOutputParser so both chains return text, as the
+# comment at the start of this example explains.
+good_chain = prompt | llm | StrOutputParser()
 
 # We can now create a final chain which combines the two
 chain = bad_chain.with_fallbacks([good_chain])
